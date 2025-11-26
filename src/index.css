@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode Defaults */
+    --layer-1: 255, 255, 255;
+    --layer-2: 247, 248, 250;
+    --layer-3: 242, 243, 245;
+    
+    --label-1: 38, 38, 38;
+    --label-2: 60, 60, 67;
+    --label-3: 60, 60, 67;
+    --label-4: 60, 60, 67;
+    
+    --divider: 229, 231, 235;
+    --divider-2: 229, 231, 235;
+    
+    --fill-1: 0, 0, 0;
+    --fill-2: 0, 0, 0;
+    --fill-3: 0, 0, 0;
+    
+    --fill-1-opacity: 0.08;
+    --fill-2-opacity: 0.04;
+    --fill-3-opacity: 0.05;
+
+    --label-2-opacity: 0.6;
+    --label-3-opacity: 0.3;
+    --label-4-opacity: 0.15;
+  }
+
+  .dark {
+    /* Dark Mode Overrides */
+    --layer-1: 40, 40, 40;
+    --layer-2: 26, 26, 26;
+    --layer-3: 0, 0, 0;
+    
+    --label-1: 255, 255, 255;
+    --label-2: 239, 241, 246;
+    --label-3: 239, 241, 246;
+    --label-4: 239, 241, 246;
+    
+    --divider: 0, 0, 0;
+    --divider-2: 0, 0, 0;
+    
+    --fill-1: 255, 255, 255;
+    --fill-2: 255, 255, 255;
+    --fill-3: 255, 255, 255;
+
+    --fill-1-opacity: 0.12;
+    --fill-2-opacity: 0.08;
+    --fill-3-opacity: 0.06;
+
+    --label-2-opacity: 0.75;
+    --label-3-opacity: 0.5;
+    --label-4-opacity: 0.25;
+    
+    --divider-opacity: 0;
+    --divider-2-opacity: 0;
+  }
+  
+  body {
+    @apply bg-dark-layer-3 text-dark-label-1 antialiased selection:bg-dark-brand-blue selection:text-white font-sans text-base;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-fill-2 rounded-full hover:bg-dark-fill-1 transition-colors;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-dark-brand-orange text-white hover:bg-opacity-90 transition-all active:scale-95;
+  }
+  
+  .card {
+    @apply bg-dark-layer-1 rounded-lg border border-dark-divider;
+  }
+}
