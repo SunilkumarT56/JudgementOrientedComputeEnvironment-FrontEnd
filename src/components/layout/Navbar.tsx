@@ -1,7 +1,9 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { List, ChevronLeft, ChevronRight, Shuffle, Timer, Settings, LayoutGrid, Flame, User, Bell, ChevronDown, Gift, LogOut, FileText, Layout, CreditCard, FlaskConical, Moon, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import axios from 'axios';
+
 
 interface NavbarProps {
   onOpenProblemList?: () => void;
@@ -9,12 +11,63 @@ interface NavbarProps {
 
 const Navbar = ({ onOpenProblemList }: NavbarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomePage = location.pathname === '/' || location.pathname === '/problems';
   const { theme, setTheme } = useTheme();
   
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isAppearanceSubmenuOpen, setIsAppearanceSubmenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  
+  const [currentSlug, setCurrentSlug] = useState<string | null>(null);
+  const [isLoadingNavigation, setIsLoadingNavigation] = useState(false);
+
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    if (pathParts[1] === 'problems' && pathParts[2]) {
+      setCurrentSlug(pathParts[2]);
+    } else {
+      setCurrentSlug(null);
+    }
+  }, [location.pathname]);
+
+  const handleNavigation = async (direction: 'next' | 'prev' | 'random') => {
+    if (isLoadingNavigation) return;
+    setIsLoadingNavigation(true);
+    
+    try {
+      let endpoint = '';
+      if (direction === 'random') {
+        endpoint = 'http://localhost:30000/problems/random';
+      } else {
+        if (!currentSlug) return;
+        endpoint = `http://localhost:30000/problems/${currentSlug}/${direction}`;
+      }
+
+      const response = await axios.get(endpoint);
+      const data = response.data;
+      
+      let targetSlug = '';
+      
+      if (direction === 'random' && data.random) {
+        targetSlug = data.random.slug;
+      } else if (direction === 'next' && data.next) {
+        targetSlug = data.next.slug;
+      } else if (direction === 'prev' && data.prev) {
+        targetSlug = data.prev.slug;
+      }
+
+      if (targetSlug) {
+        navigate(`/problems/${targetSlug}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      
+    } catch (error) {
+      console.error(`Error navigating ${direction}:`, error);
+    } finally {
+      setIsLoadingNavigation(false);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -30,19 +83,19 @@ const Navbar = ({ onOpenProblemList }: NavbarProps) => {
   }, []);
 
   return (
-    <nav className="h-14 bg-dark-layer-3 flex items-center px-4 sticky top-0 z-50">
+    <nav className="h-14 bg-dark-layer-3 flex items-center px-4 fixed top-0 w-full z-50">
       <div className="max-w-[1800px] mx-auto w-full flex items-center justify-between">
         
         {/* Home Page Navbar */}
         {isHomePage ? (
           <>
-            <div className="flex items-center gap-6">
-              <Link to="/" className="flex items-center gap-2 mr-2">
+            <div className="flex items-center gap-6 flex-1">
+              <Link to="/" className="flex items-center gap-2 mr-2 shrink-0">
                 <img src="/leetcode.png" alt="Logo" className="h-6 w-6" />
                 <span className="text-dark-label-1 font-medium text-lg tracking-tight">LeetCode</span>
               </Link>
               
-              <div className="flex items-center gap-5 text-sm text-dark-label-2">
+              <div className="flex items-center gap-5 text-sm text-dark-label-2 shrink-0">
                 <a href="#" className="hover:text-dark-label-1 transition-colors">Explore</a>
                 <a href="#" className="text-dark-label-1 font-medium">Problems</a>
                 <a href="#" className="hover:text-dark-label-1 transition-colors">Contest</a>
@@ -55,7 +108,11 @@ const Navbar = ({ onOpenProblemList }: NavbarProps) => {
                   <span className="text-dark-brand-orange">Store</span>
                   <ChevronDown size={14} className="group-hover:rotate-180 transition-transform text-dark-brand-orange" />
                 </div>
+                
+
               </div>
+
+
             </div>
 
             <div className="flex items-center gap-4">
@@ -109,12 +166,12 @@ const Navbar = ({ onOpenProblemList }: NavbarProps) => {
 
                     {/* Points */}
                     <div className="px-4 py-2">
-                       <div className="bg-dark-fill-3 rounded-lg p-3 flex items-center justify-between">
+                       <div className="bg-dark-fill-3 rounded-lg p-3 flex items-center justify-center">
                           <div className="flex items-center gap-2">
                              <div className="w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center text-xs font-bold">P</div>
                              <span className="text-sm text-dark-label-2">Points</span>
                           </div>
-                          <span className="text-sm font-bold text-dark-label-1">0</span>
+                          <span className="text-sm font-bold text-dark-label-1 ml-auto">0</span>
                        </div>
                     </div>
 
@@ -202,22 +259,35 @@ const Navbar = ({ onOpenProblemList }: NavbarProps) => {
               <div className="flex items-center gap-1">
                 <button 
                   onClick={onOpenProblemList}
-                  className="flex items-center gap-2 px-3 py-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors"
+                  className="flex items-center gap-2 px-2 py-1.5 text-dark-label-2 hover:bg-dark-fill-3 rounded transition-colors mr-2"
                 >
-                  <List size={16} />
+                  <List size={18} />
                   <span className="text-sm font-medium">Problem List</span>
                 </button>
+
                 
                 <div className="flex items-center gap-1">
-                  <button className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors">
+                  <button 
+                    onClick={() => handleNavigation('prev')}
+                    disabled={!currentSlug || isLoadingNavigation}
+                    className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <ChevronLeft size={16} />
                   </button>
-                  <button className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors">
+                  <button 
+                    onClick={() => handleNavigation('next')}
+                    disabled={!currentSlug || isLoadingNavigation}
+                    className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <ChevronRight size={16} />
                   </button>
                 </div>
 
-                <button className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors ml-1">
+                <button 
+                  onClick={() => handleNavigation('random')}
+                  disabled={isLoadingNavigation}
+                  className="p-1.5 text-dark-label-2 hover:text-dark-label-1 hover:bg-dark-fill-3 rounded transition-colors ml-1"
+                >
                   <Shuffle size={16} />
                 </button>
               </div>

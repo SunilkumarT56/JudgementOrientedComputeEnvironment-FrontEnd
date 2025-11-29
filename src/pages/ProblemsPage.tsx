@@ -1,17 +1,8 @@
-import { Check, Search, Calendar as CalendarIcon, Filter, ChevronDown, ChevronUp, Lock, Star, X, Box, GitFork, Database, Terminal, ArrowRightLeft, FileCode, BarChart3, ChevronLeft, ChevronRight, ArrowUp, EyeOff, Loader2 } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, Filter, ChevronDown, ChevronUp, Lock, Star, X, Box, GitFork, Database, Terminal, ArrowRightLeft, FileCode, BarChart3, ChevronLeft, ChevronRight, ArrowUp, Check, EyeOff, ArrowUpDown } from 'lucide-react';
 import { clsx } from 'clsx';
-import { Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-
-interface Problem {
-  problem_id: number;
-  title: string;
-  difficulty: string;
-  acceptance: string;
-  is_premium: boolean;
-  status?: string; // Optional for now as API doesn't return it yet
-}
+import { useDebounce } from '../hooks/useDebounce';
+import ProblemList from '../components/problems/ProblemList';
 
 const DAILY_CHALLENGE = {
   id: 2435,
@@ -43,6 +34,17 @@ const TOPICS = [
   { name: 'Binary Search', count: 302 },
   { name: 'Matrix', count: 256 },
   { name: 'Tree', count: 245 },
+   { name: 'Array', count: 2050 },
+  { name: 'String', count: 832 },
+  { name: 'Hash Table', count: 759 },
+  { name: 'Math', count: 638 },
+  { name: 'Dynamic Programming', count: 632 },
+  { name: 'Sorting', count: 485 },
+  { name: 'Greedy', count: 445 },
+  { name: 'Depth-First Search', count: 338 },
+  { name: 'Binary Search', count: 302 },
+  { name: 'Matrix', count: 256 },
+  { name: 'Tree', count: 245 }
 ];
 
 const TRENDING_COMPANIES = [
@@ -83,30 +85,16 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
 
 const ProblemsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [isTopicsExpanded, setIsTopicsExpanded] = useState(false);
+  
+  // Sorting State
+  const [sortBy, setSortBy] = useState('custom');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
-  
-  const [problems, setProblems] = useState<Problem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchProblems = async () => {
-      try {
-        const response = await axios.get('http://localhost:30000/problems');
-        setProblems(response.data);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Error fetching problems:', err);
-        setError('Failed to load problems. Please try again later.');
-        setIsLoading(false);
-      }
-    };
-
-    fetchProblems();
-  }, []);
-
+  // Handle click outside sort menu
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
@@ -118,6 +106,12 @@ const ProblemsPage = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleSortChange = (newSortBy: string, newOrder: 'asc' | 'desc') => {
+    setSortBy(newSortBy);
+    setSortOrder(newOrder);
+    setIsSortMenuOpen(false);
+  };
 
   return (
     <div className="flex-1 bg-dark-layer-2 p-6 min-h-[calc(100vh-56px)]">
@@ -199,57 +193,76 @@ const ProblemsPage = () => {
           <div className="flex items-center justify-between gap-4 mb-2">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative flex-1 max-w-[280px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-label-3" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-label-3" size={15} />
                 <input 
                   type="text" 
                   placeholder="Search questions" 
-                  className="w-full bg-dark-fill-3 border-none rounded-full py-2 pl-10 pr-4 text-sm text-dark-label-1 placeholder:text-dark-label-3 focus:ring-0"
+                  className="w-full bg-[#282828] !border-none !outline-none focus:!outline-none focus:!ring-0 focus:!border-transparent !ring-0 focus:!ring-offset-0 !shadow-none rounded-full py-2 pl-10 pr-4 text-sm text-dark-label-1 placeholder:text-gray-400"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               
+              {/* Sort Menu */}
               <div className="relative" ref={sortMenuRef}>
                 <button 
                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
                   className={clsx(
-                    "p-2 rounded-lg transition-colors",
-                    isSortMenuOpen ? "bg-dark-fill-2 text-white" : "bg-dark-fill-3 text-dark-label-2 hover:bg-dark-fill-2 hover:text-dark-label-1"
+                    "w-9 h-9 rounded-full flex items-center justify-center transition-colors",
+                    isSortMenuOpen ? "bg-[#282828] text-white" : "bg-[#282828] text-dark-label-2 hover:text-dark-label-1"
                   )}
                 >
-                  <ArrowRightLeft size={18} className="rotate-90" />
+                  <ArrowUpDown size={16} />
                 </button>
 
-                {/* Sort Menu Dropdown */}
                 {isSortMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-dark-layer-1 rounded-lg shadow-xl border border-dark-divider z-50 overflow-hidden py-1">
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-dark-layer-1 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                    <div onClick={() => handleSortChange('custom', 'asc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
                       <span className="text-sm">Custom</span>
-                      <Check size={16} />
+                      {sortBy === 'custom' && <Check size={16} />}
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-2">
+                    <div onClick={() => handleSortChange('frequency', 'desc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-2">
                       <span className="text-sm">Frequency</span>
-                      <Lock size={14} className="text-dark-brand-orange" />
+                      {sortBy === 'frequency' && <Check size={16} />}
+                      <Lock size={14} className="text-dark-brand-orange ml-auto" />
                     </div>
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-2">
+                    <div onClick={() => handleSortChange('contestPoint', 'desc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-2">
                       <span className="text-sm">Contest Point</span>
-                      <Lock size={14} className="text-dark-brand-orange" />
+                      {sortBy === 'contestPoint' && <Check size={16} />}
+                      <Lock size={14} className="text-dark-brand-orange ml-auto" />
                     </div>
                     <div className="h-[1px] bg-dark-divider my-1"></div>
-                    <div className="px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1 text-sm">Difficulty</div>
-                    <div className="px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1 text-sm">Acceptance</div>
-                    <div className="px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1 text-sm">Question ID</div>
-                    <div className="px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1 text-sm">Last Submitted Time</div>
+                    <div onClick={() => handleSortChange('difficulty', 'asc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                        <span className="text-sm">Difficulty</span>
+                        {sortBy === 'difficulty' && <Check size={16} />}
+                    </div>
+                    <div onClick={() => handleSortChange('acceptance', 'desc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                        <span className="text-sm">Acceptance</span>
+                        {sortBy === 'acceptance' && <Check size={16} />}
+                    </div>
+                    <div onClick={() => handleSortChange('questionId', 'asc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                        <span className="text-sm">Question ID</span>
+                        {sortBy === 'questionId' && <Check size={16} />}
+                    </div>
+                     <div onClick={() => handleSortChange('newest', 'desc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                        <span className="text-sm">Newest</span>
+                        {sortBy === 'newest' && <Check size={16} />}
+                    </div>
+                     <div onClick={() => handleSortChange('oldest', 'asc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                        <span className="text-sm">Oldest</span>
+                        {sortBy === 'oldest' && <Check size={16} />}
+                    </div>
                     <div className="h-[1px] bg-dark-divider my-1"></div>
-                    <div className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
+                    <div onClick={() => handleSortChange('tags', 'asc')} className="flex items-center justify-between px-4 py-2 hover:bg-dark-fill-3 cursor-pointer text-dark-label-1">
                       <span className="text-sm">Tags</span>
-                      <EyeOff size={16} className="text-dark-label-2" />
+                      {sortBy === 'tags' && <Check size={16} />}
+                      <EyeOff size={16} className="text-dark-label-2 ml-auto" />
                     </div>
                   </div>
                 )}
               </div>
               
-              <button className="p-2 bg-dark-fill-3 rounded-full text-dark-label-2 hover:text-dark-label-1 transition-colors">
+              <button className="p-2 bg-[#282828] rounded-full text-dark-label-2 hover:text-dark-label-1 transition-colors">
                 <Filter size={18} />
               </button>
             </div>
@@ -269,7 +282,7 @@ const ProblemsPage = () => {
           <div className="space-y-2">
             
             {/* Daily Challenge */}
-            <div className="grid grid-cols-[1fr_100px_80px_80px] gap-4 px-4 py-4 bg-dark-layer-1 rounded-lg items-center cursor-pointer group border-l-2 border-transparent">
+            <div className="grid grid-cols-[1fr_100px_80px_80px] gap-4 px-4 py-3 bg-dark-layer-1 rounded-lg items-center cursor-pointer group border-l-2 border-transparent">
               <div className="flex items-center gap-3">
                 <CalendarIcon className="text-blue-500" size={18} />
                 <span className="text-dark-label-1 font-medium transition-colors">
@@ -287,41 +300,7 @@ const ProblemsPage = () => {
             </div>
 
             {/* Problem List */}
-            {isLoading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loader2 className="animate-spin text-dark-label-2" size={32} />
-              </div>
-            ) : error ? (
-              <div className="text-center py-10 text-red-500">
-                {error}
-              </div>
-            ) : (
-              problems.map((problem, index) => (
-                <div 
-                  key={problem.problem_id} 
-                  className={clsx(
-                    "grid grid-cols-[1fr_100px_80px_80px] gap-4 px-4 py-4 rounded-lg transition-colors items-center group",
-                    index % 2 === 0 ? "bg-dark-layer-2" : "bg-dark-layer-1"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 flex justify-center">
-                      {problem.status === 'solved' && <Check size={18} className="text-dark-brand-green" />}
-                    </div>
-                    <Link to={`/problems/${problem.title.toLowerCase().replace(/ /g, '-')}`} className="text-dark-label-1 text-base font-medium transition-colors truncate">
-                      {problem.problem_id}. {problem.title}
-                    </Link>
-                  </div>
-                  <div className="text-dark-label-2 text-base text-right">{problem.acceptance}</div>
-                  <div className="text-right">
-                    <DifficultyBadge difficulty={problem.difficulty} />
-                  </div>
-                   <div className="flex justify-end gap-2 text-dark-label-3">
-                     <div className="w-6 flex justify-center">{problem.is_premium && <Lock size={18} />}</div>
-                   </div>
-                </div>
-              ))
-            )}
+            <ProblemList searchQuery={debouncedSearchQuery} sortBy={sortBy} sortOrder={sortOrder} />
           </div>
         </div>
 

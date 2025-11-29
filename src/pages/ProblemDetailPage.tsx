@@ -62,7 +62,9 @@ const ProblemDetailPage = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-56px)] bg-dark-layer-2 overflow-hidden p-2">
+    <div className="h-[calc(100vh-56px)] bg-dark-layer-2 overflow-hidden p-2 relative">
+
+      
       <PanelGroup direction="horizontal">
         {/* Left Panel - Description */}
         <Panel ref={leftPanelRef} defaultSize={50} minSize={0} collapsible>
@@ -70,7 +72,7 @@ const ProblemDetailPage = () => {
             <ProblemDescription 
               problem={problem}
               onCollapse={handleCollapse} 
-              onExpand={handleExpand} 
+              onExpand={handleExpand}
             />
           </div>
         </Panel>
@@ -83,7 +85,11 @@ const ProblemDetailPage = () => {
             {/* Top - Code Editor */}
             <Panel defaultSize={60} minSize={30}>
               <div className="h-full rounded-xl overflow-hidden shadow-sm">
-                <CodeEditor codeSnippets={problem?.code_snippets} />
+                <CodeEditor 
+                  codeSnippets={problem?.code_snippets} 
+                  onRun={handleRun}
+                  onSubmit={handleSubmit}
+                />
               </div>
             </Panel>
 
@@ -92,7 +98,7 @@ const ProblemDetailPage = () => {
             {/* Bottom - Testcase Panel */}
             <Panel defaultSize={40} minSize={6}>
               <div className="h-full rounded-xl overflow-hidden shadow-sm">
-                <TestcasePanel result={result} onRun={handleRun} onSubmit={handleSubmit} />
+                <TestcasePanel result={result} />
               </div>
             </Panel>
           </PanelGroup>
