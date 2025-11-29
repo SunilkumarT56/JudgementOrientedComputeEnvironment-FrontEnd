@@ -1,30 +1,17 @@
-import { Check, Search, Calendar as CalendarIcon, Filter, ChevronDown, ChevronUp, Lock, Star, X, Box, GitFork, Database, Terminal, ArrowRightLeft, FileCode, BarChart3, ChevronLeft, ChevronRight, ArrowUp, EyeOff } from 'lucide-react';
+import { Check, Search, Calendar as CalendarIcon, Filter, ChevronDown, ChevronUp, Lock, Star, X, Box, GitFork, Database, Terminal, ArrowRightLeft, FileCode, BarChart3, ChevronLeft, ChevronRight, ArrowUp, EyeOff, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 
-const MOCK_PROBLEMS = [
-  { id: 1, title: 'Two Sum', difficulty: 'Easy', acceptance: '56.6%', status: 'solved', isLocked: false },
-  { id: 2, title: 'Add Two Numbers', difficulty: 'Medium', acceptance: '47.4%', status: 'todo', isLocked: false },
-  { id: 3, title: 'Longest Substring Without Repeating Characters', difficulty: 'Medium', acceptance: '37.9%', status: 'todo', isLocked: false },
-  { id: 4, title: 'Median of Two Sorted Arrays', difficulty: 'Hard', acceptance: '45.2%', status: 'solved', isLocked: false },
-  { id: 5, title: 'Longest Palindromic Substring', difficulty: 'Medium', acceptance: '36.8%', status: 'todo', isLocked: false },
-  { id: 6, title: 'Zigzag Conversion', difficulty: 'Medium', acceptance: '52.9%', status: 'todo', isLocked: false },
-  { id: 7, title: 'Reverse Integer', difficulty: 'Medium', acceptance: '31.1%', status: 'solved', isLocked: false },
-  { id: 8, title: 'String to Integer (atoi)', difficulty: 'Medium', acceptance: '20.1%', status: 'solved', isLocked: false },
-  { id: 9, title: 'Palindrome Number', difficulty: 'Easy', acceptance: '59.9%', status: 'solved', isLocked: false },
-  { id: 10, title: 'Regular Expression Matching', difficulty: 'Hard', acceptance: '30.0%', status: 'todo', isLocked: false },
-  { id: 11, title: 'Container With Most Water', difficulty: 'Medium', acceptance: '59.0%', status: 'todo', isLocked: false },
-  { id: 12, title: 'Integer to Roman', difficulty: 'Medium', acceptance: '69.9%', status: 'todo', isLocked: false },
-  { id: 13, title: 'Roman to Integer', difficulty: 'Easy', acceptance: '65.8%', status: 'solved', isLocked: false },
-  { id: 14, title: 'Longest Common Prefix', difficulty: 'Easy', acceptance: '46.6%', status: 'todo', isLocked: false },
-  { id: 15, title: '3Sum', difficulty: 'Medium', acceptance: '35.4%', status: 'todo', isLocked: false },
-  { id: 16, title: '3Sum Closest', difficulty: 'Medium', acceptance: '47.6%', status: 'todo', isLocked: false },
-  { id: 17, title: 'Letter Combinations of a Phone Number', difficulty: 'Medium', acceptance: '61.5%', status: 'solved', isLocked: false },
-  { id: 18, title: '4Sum', difficulty: 'Medium', acceptance: '36.2%', status: 'todo', isLocked: false },
-  { id: 19, title: 'Remove Nth Node From End of List', difficulty: 'Medium', acceptance: '46.1%', status: 'todo', isLocked: false },
-  { id: 20, title: 'Valid Parentheses', difficulty: 'Easy', acceptance: '41.3%', status: 'solved', isLocked: false },
-];
+interface Problem {
+  problem_id: number;
+  title: string;
+  difficulty: string;
+  acceptance: string;
+  is_premium: boolean;
+  status?: string; // Optional for now as API doesn't return it yet
+}
 
 const DAILY_CHALLENGE = {
   id: 2435,
@@ -80,6 +67,7 @@ const TRENDING_COMPANIES = [
 ];
 
 const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
+  const normalizedDifficulty = difficulty.charAt(0).toUpperCase() + difficulty.slice(1).toLowerCase();
   const colors = {
     Easy: 'text-dark-brand-green bg-dark-brand-green/10',
     Medium: 'text-dark-brand-orange bg-dark-brand-orange/10',
@@ -87,8 +75,8 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
   };
 
   return (
-    <span className={clsx('px-2 py-0.5 rounded text-xs font-medium', colors[difficulty as keyof typeof colors])}>
-      {difficulty === 'Medium' ? 'Med.' : difficulty}
+    <span className={clsx('px-2.5 py-1 rounded text-sm font-medium', colors[normalizedDifficulty as keyof typeof colors])}>
+      {normalizedDifficulty === 'Medium' ? 'Med.' : normalizedDifficulty}
     </span>
   );
 };
@@ -98,6 +86,26 @@ const ProblemsPage = () => {
   const [isTopicsExpanded, setIsTopicsExpanded] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
+  
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProblems = async () => {
+      try {
+        const response = await axios.get('http://localhost:30000/problems');
+        setProblems(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching problems:', err);
+        setError('Failed to load problems. Please try again later.');
+        setIsLoading(false);
+      }
+    };
+
+    fetchProblems();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -279,31 +287,41 @@ const ProblemsPage = () => {
             </div>
 
             {/* Problem List */}
-            {MOCK_PROBLEMS.map((problem, index) => (
-              <div 
-                key={problem.id} 
-                className={clsx(
-                  "grid grid-cols-[1fr_100px_80px_80px] gap-4 px-4 py-4 rounded-lg transition-colors items-center group",
-                  index % 2 === 0 ? "bg-dark-layer-2" : "bg-dark-layer-1"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-5 flex justify-center">
-                    {problem.status === 'solved' && <Check size={18} className="text-dark-brand-green" />}
-                  </div>
-                  <Link to={`/problems/${problem.id}`} className="text-dark-label-1 text-base font-medium transition-colors truncate">
-                    {problem.id}. {problem.title}
-                  </Link>
-                </div>
-                <div className="text-dark-label-2 text-base text-right">{problem.acceptance}</div>
-                <div className="text-right">
-                  <DifficultyBadge difficulty={problem.difficulty} />
-                </div>
-                 <div className="flex justify-end gap-2 text-dark-label-3">
-                   <div className="w-6 flex justify-center">{problem.isLocked && <Lock size={18} />}</div>
-                 </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="animate-spin text-dark-label-2" size={32} />
               </div>
-            ))}
+            ) : error ? (
+              <div className="text-center py-10 text-red-500">
+                {error}
+              </div>
+            ) : (
+              problems.map((problem, index) => (
+                <div 
+                  key={problem.problem_id} 
+                  className={clsx(
+                    "grid grid-cols-[1fr_100px_80px_80px] gap-4 px-4 py-4 rounded-lg transition-colors items-center group",
+                    index % 2 === 0 ? "bg-dark-layer-2" : "bg-dark-layer-1"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 flex justify-center">
+                      {problem.status === 'solved' && <Check size={18} className="text-dark-brand-green" />}
+                    </div>
+                    <Link to={`/problems/${problem.title.toLowerCase().replace(/ /g, '-')}`} className="text-dark-label-1 text-base font-medium transition-colors truncate">
+                      {problem.problem_id}. {problem.title}
+                    </Link>
+                  </div>
+                  <div className="text-dark-label-2 text-base text-right">{problem.acceptance}</div>
+                  <div className="text-right">
+                    <DifficultyBadge difficulty={problem.difficulty} />
+                  </div>
+                   <div className="flex justify-end gap-2 text-dark-label-3">
+                     <div className="w-6 flex justify-center">{problem.is_premium && <Lock size={18} />}</div>
+                   </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

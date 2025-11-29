@@ -25,10 +25,21 @@ const LANGUAGES = [
   { id: 'elixir', name: 'Elixir' },
 ];
 
-const CodeEditor = () => {
+interface CodeEditorProps {
+  codeSnippets?: Record<string, string>;
+}
+
+const CodeEditor = ({ codeSnippets }: CodeEditorProps) => {
   const [language, setLanguage] = useState('python');
+  const [value, setValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (codeSnippets && codeSnippets[language]) {
+      setValue(codeSnippets[language]);
+    }
+  }, [codeSnippets, language]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -170,7 +181,15 @@ const CodeEditor = () => {
           <button className="p-2 text-dark-label-3 hover:text-dark-label-1 rounded-md transition-colors" title="Code">
             <Code size={16} />
           </button>
-          <button className="p-2 text-dark-label-3 hover:text-dark-label-1 rounded-md transition-colors" title="Reset">
+          <button 
+            className="p-2 text-dark-label-3 hover:text-dark-label-1 rounded-md transition-colors" 
+            title="Reset"
+            onClick={() => {
+              if (codeSnippets && codeSnippets[language]) {
+                setValue(codeSnippets[language]);
+              }
+            }}
+          >
             <RotateCcw size={16} />
           </button>
           <button className="p-2 text-dark-label-3 hover:text-dark-label-1 rounded-md transition-colors" title="Maximize">
@@ -184,13 +203,8 @@ const CodeEditor = () => {
         <Editor
           height="100%"
           language={language}
-          defaultValue={`class Solution(object):
-    def twoSum(self, nums, target):
-        """
-        :type nums: List[int]
-        :type target: int
-        :rtype: List[int]
-        """`}
+          value={value}
+          onChange={(value) => setValue(value || '')}
           theme="vs-dark"
           onMount={() => console.log('Editor mounted')}
           loading={<div className="text-white p-4">Loading Editor...</div>}

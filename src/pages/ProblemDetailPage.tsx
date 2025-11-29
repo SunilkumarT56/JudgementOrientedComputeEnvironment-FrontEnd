@@ -1,14 +1,31 @@
-
-
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelHandle } from 'react-resizable-panels';
 import ProblemDescription from '../components/editor/ProblemDescription';
 import CodeEditor from '../components/editor/CodeEditor';
 import TestcasePanel from '../components/editor/TestcasePanel';
+import type { Problem } from '../types/problem';
 
 const ProblemDetailPage = () => {
+  const { id } = useParams();
+  const [problem, setProblem] = useState<Problem | undefined>(undefined);
   const [result, setResult] = useState<{ status: 'success' | 'error' | null, message: string } | null>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
+
+  useEffect(() => {
+    const fetchProblem = async () => {
+      if (!id) return;
+      try {
+        const response = await axios.get(`http://localhost:30000/problems/${id}`);
+        setProblem(response.data);
+      } catch (error) {
+        console.error('Error fetching problem:', error);
+      }
+    };
+
+    fetchProblem();
+  }, [id]);
 
   const handleRun = () => {
     setResult(null);
@@ -50,7 +67,11 @@ const ProblemDetailPage = () => {
         {/* Left Panel - Description */}
         <Panel ref={leftPanelRef} defaultSize={50} minSize={0} collapsible>
           <div className="h-full rounded-xl overflow-hidden shadow-sm">
-            <ProblemDescription onCollapse={handleCollapse} onExpand={handleExpand} />
+            <ProblemDescription 
+              problem={problem}
+              onCollapse={handleCollapse} 
+              onExpand={handleExpand} 
+            />
           </div>
         </Panel>
 
@@ -62,7 +83,7 @@ const ProblemDetailPage = () => {
             {/* Top - Code Editor */}
             <Panel defaultSize={60} minSize={30}>
               <div className="h-full rounded-xl overflow-hidden shadow-sm">
-                <CodeEditor />
+                <CodeEditor codeSnippets={problem?.code_snippets} />
               </div>
             </Panel>
 
